@@ -80,13 +80,18 @@ async function initDb() {
 }
 
 async function startServer() {
-  await initDb();
+  // Initialize DB in background
+  initDb().catch(err => console.error('Background DB init error:', err));
   
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
   app.use(cookieParser());
+
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working' });
+  });
 
   // --- Auth Routes ---
 
@@ -115,6 +120,7 @@ async function startServer() {
 
   // Login
   app.post('/api/auth/login', async (req, res) => {
+    console.log('Login request received:', req.body.email);
     const { email, password } = req.body;
     try {
       const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -276,6 +282,11 @@ async function startServer() {
       console.error('Admin users error:', err);
       res.status(500).json({ error: `Internal server error: ${err.message || err}` });
     }
+  });
+
+  // Catch-all for API routes to prevent falling through to Vite
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.url}` });
   });
 
   // Vite middleware for development

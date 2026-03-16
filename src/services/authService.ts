@@ -8,8 +8,15 @@ export const authService = {
       body: JSON.stringify(credentials),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      let errorMessage = 'Login failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        // If response is not JSON, use the status text or a generic message
+        errorMessage = `Server error: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -21,8 +28,14 @@ export const authService = {
       body: JSON.stringify(credentials),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Registration failed');
+      let errorMessage = 'Registration failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        errorMessage = `Server error: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -33,7 +46,16 @@ export const authService = {
 
   async getMe(): Promise<{ user: User }> {
     const response = await fetch('/api/auth/me');
-    if (!response.ok) throw new Error('Not authenticated');
+    if (!response.ok) {
+      let errorMessage = 'Not authenticated';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (e) {
+        errorMessage = `Session error: ${response.status}`;
+      }
+      throw new Error(errorMessage);
+    }
     return response.json();
   }
 };
