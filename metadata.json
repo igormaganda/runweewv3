@@ -1,0 +1,7 @@
+{
+  "name": "RunWeek Magazine",
+  "description": "AI-powered storytelling platform for runners. Transform your runs into magazine-quality editorial articles.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

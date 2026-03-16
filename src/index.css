@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-serif: "Playfair Display", serif;
+
+  --color-brand-coral: #FF5733;
+  --color-brand-turquoise: #00BFA5;
+  --color-brand-yellow: #FFB300;
+  --color-brand-navy: #1B2A4A;
+  --color-brand-sky: #F0F9FF;
+  --color-brand-mint: #F0FDF4;
+  --color-brand-peach: #FFF7ED;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-brand-navy bg-white;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+.glass-nav {
+  @apply sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-brand-navy/5;
+}
+
+.article-card {
+  @apply relative overflow-hidden rounded-2xl transition-all duration-300;
+}
+
+.btn-primary {
+  @apply px-6 py-3 bg-brand-coral text-white font-bold rounded-full transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-coral/20;
+}
+
+.section-label {
+  @apply text-xs font-bold uppercase tracking-widest text-brand-coral mb-2 block;
+}
