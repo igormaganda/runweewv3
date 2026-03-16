@@ -1,17 +1,65 @@
-import React from 'react';
-import { MOCK_STORIES, MOCK_CHALLENGES } from '../constants';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { MOCK_STORIES, MOCK_CHALLENGES, HERO_BACKGROUNDS } from '../constants';
 import { RunStoryCard } from '../components/RunStoryCard';
 import { ArrowRight, Zap, Trophy, Users, Map, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
+import { RunStory } from '../types';
 
-interface Props {
-  onStoryClick: (story: RunStory) => void;
-}
+export const Home: React.FC = () => {
+  const [stories, setStories] = useState<RunStory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [heroBg, setHeroBg] = useState(HERO_BACKGROUNDS[0]);
 
-export const Home: React.FC<Props> = ({ onStoryClick }) => {
-  const featuredStory = MOCK_STORIES.find(s => s.isFeatured) || MOCK_STORIES[0];
-  const trendingStories = MOCK_STORIES.filter(s => s.isTrending);
-  const latestStories = MOCK_STORIES.slice(0, 3);
+  useEffect(() => {
+    // Select random background
+    const randomIndex = Math.floor(Math.random() * HERO_BACKGROUNDS.length);
+    setHeroBg(HERO_BACKGROUNDS[randomIndex]);
+
+    const fetchStories = async () => {
+      try {
+        const response = await fetch('/api/stories');
+        const data = await response.json();
+        if (data.length > 0) {
+          const mappedStories = data.map((s: any) => ({
+            ...s,
+            id: s.id.toString(),
+            excerpt: s.content.substring(0, 150) + '...',
+            category: 'Trail',
+            author: {
+              id: s.author_id.toString(),
+              name: s.author_name || 'Anonymous',
+              avatar: `https://i.pravatar.cc/150?u=${s.author_id}`,
+              bio: '',
+              stats: { totalDistance: 0, storiesPublished: 0 }
+            },
+            date: new Date(s.created_at).toLocaleDateString(),
+            runData: s.stats || { distance: 0, pace: '0:00', elevation: 0, time: '0:00' }
+          }));
+          setStories(mappedStories);
+        } else {
+          setStories(MOCK_STORIES);
+        }
+      } catch (err) {
+        console.error('Failed to fetch stories:', err);
+        setStories(MOCK_STORIES);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStories();
+  }, []);
+
+  const featuredStory = stories.find(s => s.isFeatured) || stories[0] || MOCK_STORIES[0];
+  const latestStories = stories.slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand-coral border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -19,7 +67,7 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
       <section className="relative min-h-[80vh] flex items-center px-6 py-20 overflow-hidden bg-brand-navy">
         <div className="absolute inset-0 opacity-40">
           <img 
-            src={featuredStory.imageUrl} 
+            src={heroBg} 
             className="w-full h-full object-cover"
             alt="Hero Background"
             referrerPolicy="no-referrer"
@@ -45,18 +93,18 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
               L'IA au service de votre passion pour le running.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="btn-primary">
+              <Link to="/generator" className="btn-primary">
                 Publier ma course
-              </button>
+              </Link>
               <button className="px-6 py-3 border border-white/20 text-white rounded-full font-bold hover:bg-white/10 transition-all">
                 Explorer le magazine
               </button>
             </div>
           </motion.div>
           
-          <div className="hidden lg:block cursor-pointer" onClick={() => onStoryClick(featuredStory)}>
+          <Link to={`/article/${featuredStory.slug || featuredStory.id}`} className="hidden lg:block cursor-pointer">
             <RunStoryCard story={featuredStory} variant="large" />
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -74,9 +122,9 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {latestStories.map(story => (
-            <div key={story.id} onClick={() => onStoryClick(story)} className="cursor-pointer">
+            <Link key={story.id} to={`/article/${story.slug || story.id}`} className="cursor-pointer">
               <RunStoryCard story={story} />
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -88,10 +136,10 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
             <span className="section-label">Trending Runs</span>
             <h2 className="text-4xl font-display font-black mb-12">Les récits du moment</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-              {MOCK_STORIES.slice(0, 4).map(story => (
-                <div key={story.id} onClick={() => onStoryClick(story)} className="cursor-pointer">
+              {stories.slice(0, 4).map(story => (
+                <Link key={story.id} to={`/article/${story.slug || story.id}`} className="cursor-pointer">
                   <RunStoryCard story={story} />
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -100,10 +148,10 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
             <div>
               <h3 className="text-xl font-display font-black mb-8 pb-4 border-b border-brand-navy/10">Populaires cette semaine</h3>
               <div className="space-y-8">
-                {MOCK_STORIES.map(story => (
-                  <div key={story.id} onClick={() => onStoryClick(story)} className="cursor-pointer">
+                {stories.slice(0, 3).map(story => (
+                  <Link key={story.id} to={`/article/${story.slug || story.id}`} className="cursor-pointer">
                     <RunStoryCard story={story} variant="horizontal" />
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -137,10 +185,10 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {MOCK_STORIES.filter(s => s.category === 'Trail').concat(MOCK_STORIES[0]).slice(0, 2).map(story => (
-              <div key={story.id} onClick={() => onStoryClick(story)} className="cursor-pointer">
+            {stories.filter(s => s.category === 'Trail').slice(0, 2).map(story => (
+              <Link key={story.id} to={`/article/${story.slug || story.id}`} className="cursor-pointer">
                 <RunStoryCard story={story} variant="large" />
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -210,9 +258,9 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
             <p className="text-xl text-white/80 mb-12 font-light">
               Connectez votre compte Strava ou Garmin et laissez notre IA transformer vos données en un article de magazine professionnel.
             </p>
-            <button className="px-10 py-5 bg-white text-brand-coral font-black text-xl rounded-full hover:scale-105 transition-transform shadow-2xl">
+            <Link to="/generator" className="px-10 py-5 bg-white text-brand-coral font-black text-xl rounded-full hover:scale-105 transition-transform shadow-2xl inline-block">
               Publier mon RunStory
-            </button>
+            </Link>
           </div>
           
           {/* Decorative elements */}
@@ -240,5 +288,3 @@ export const Home: React.FC<Props> = ({ onStoryClick }) => {
     </div>
   );
 };
-
-import { RunStory } from '../types';

@@ -1,3 +1,19 @@
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterCredentials extends LoginCredentials {
+  name: string;
+}
+
 export type RunCategory = 'Trail' | 'Marathon' | 'Training' | 'Lifestyle' | 'Race';
 
 export interface RunData {
@@ -21,6 +37,7 @@ export interface Runner {
 
 export interface RunStory {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   content: string;
@@ -31,6 +48,7 @@ export interface RunStory {
   runData: RunData;
   isFeatured?: boolean;
   isTrending?: boolean;
+  status?: 'published' | 'draft';
 }
 
 export interface CommunityChallenge {

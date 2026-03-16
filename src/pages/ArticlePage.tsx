@@ -1,14 +1,60 @@
-import React from 'react';
-import { RunStory } from '../types';
-import { Calendar, Clock, MapPin, Share2, Heart, MessageSquare, ArrowLeft } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Calendar, Clock, MapPin, Share2, Heart, MessageSquare, ArrowLeft, Zap, Loader2, Twitter, Facebook, Linkedin, Instagram } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
-interface Props {
-  story: RunStory;
-  onBack: () => void;
-}
+export const ArticlePage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const [story, setStory] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showShare, setShowShare] = useState(false);
 
-export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
+  useEffect(() => {
+    const fetchStory = async () => {
+      try {
+        const response = await fetch(`/api/stories/${slug}`);
+        if (!response.ok) throw new Error('Story not found');
+        const data = await response.json();
+        setStory(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStory();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-brand-coral" size={48} />
+      </div>
+    );
+  }
+
+  if (error || !story) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-4xl font-display font-black mb-4">Oups !</h1>
+        <p className="text-brand-navy/60 mb-8">Ce récit semble s'être perdu en chemin.</p>
+        <button onClick={() => navigate('/')} className="btn-primary">Retour au magazine</button>
+      </div>
+    );
+  }
+
+  const shareUrl = window.location.href;
+  const shareTitle = story.title;
+
+  const socialLinks = [
+    { name: 'X', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}` },
+    { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+    { name: 'LinkedIn', icon: Linkedin, url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}` },
+  ];
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -18,7 +64,7 @@ export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
       {/* Article Hero */}
       <header className="relative h-[70vh] w-full overflow-hidden">
         <img 
-          src={story.imageUrl} 
+          src={story.image_url || 'https://picsum.photos/seed/run/1200/800'} 
           alt={story.title} 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
@@ -28,13 +74,13 @@ export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-20">
           <div className="max-w-4xl mx-auto">
             <button 
-              onClick={onBack}
+              onClick={() => navigate('/')}
               className="flex items-center gap-2 text-white/80 hover:text-white mb-8 transition-colors"
             >
               <ArrowLeft size={20} /> Retour au magazine
             </button>
             <span className="px-4 py-1.5 bg-brand-coral rounded-full text-[10px] font-bold uppercase tracking-widest text-white mb-6 inline-block">
-              {story.category}
+              {story.status === 'draft' ? 'Brouillon' : 'Récit de Course'}
             </span>
             <h1 className="text-4xl md:text-6xl font-serif font-bold text-white leading-tight italic mb-8">
               {story.title}
@@ -42,25 +88,27 @@ export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
             
             <div className="flex flex-wrap items-center gap-8 text-white/80">
               <div className="flex items-center gap-3">
-                <img src={story.author.avatar} alt={story.author.name} className="w-10 h-10 rounded-full border-2 border-white/20" />
+                <div className="w-10 h-10 rounded-full bg-brand-coral flex items-center justify-center text-white font-bold">
+                  {story.author_name?.[0] || 'U'}
+                </div>
                 <div>
-                  <p className="text-sm font-bold text-white">{story.author.name}</p>
-                  <p className="text-[10px] uppercase tracking-wider">{story.date}</p>
+                  <p className="text-sm font-bold text-white">{story.author_name || 'Anonyme'}</p>
+                  <p className="text-[10px] uppercase tracking-wider">{new Date(story.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
               
               <div className="flex gap-6 border-l border-white/20 pl-8">
                 <div className="text-center">
                   <p className="text-xs uppercase tracking-widest opacity-60">Distance</p>
-                  <p className="text-xl font-display font-bold">{story.runData.distance}km</p>
+                  <p className="text-xl font-display font-bold">{story.stats?.distance}km</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs uppercase tracking-widest opacity-60">Allure</p>
-                  <p className="text-xl font-display font-bold">{story.runData.pace}</p>
+                  <p className="text-xl font-display font-bold">{story.stats?.pace}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs uppercase tracking-widest opacity-60">D+</p>
-                  <p className="text-xl font-display font-bold">{story.runData.elevation}m</p>
+                  <p className="text-xl font-display font-bold">{story.stats?.elevation}m</p>
                 </div>
               </div>
             </div>
@@ -71,43 +119,54 @@ export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
       {/* Article Content */}
       <div className="max-w-4xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-4 gap-16">
         <div className="lg:col-span-3">
-          <p className="text-2xl text-brand-navy/70 font-light mb-12 italic leading-relaxed border-l-4 border-brand-coral pl-8">
-            {story.excerpt}
-          </p>
-          
           <div className="prose prose-lg prose-brand max-w-none text-brand-navy/80 leading-relaxed space-y-8">
-            <p>
-              C'était l'un de ces matins où le réveil semble plus lourd que d'habitude. Mais dès les premières foulées, l'air frais a balayé les doutes. Le parcours, soigneusement choisi la veille, promettait un défi à la hauteur de mes ambitions du moment.
-            </p>
-            <p>
-              Le rythme s'est installé naturellement. 4:45, 4:40, 4:38... Les kilomètres défilaient sous mes pieds avec une régularité métronomique. C'est dans ces moments de "flow" que le running prend tout son sens. On ne court plus seulement avec ses jambes, mais avec tout son être, en parfaite harmonie avec l'environnement.
-            </p>
-            <img 
-              src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=2070&auto=format&fit=crop" 
-              className="w-full rounded-3xl shadow-xl my-12" 
-              alt="Run context" 
-              referrerPolicy="no-referrer"
-            />
-            <p>
-              Le passage au 30ème kilomètre a été le véritable test. La fatigue commençait à se faire sentir, mais le mental a pris le relais. Chaque montée était une opportunité de tester ma résilience, chaque descente un moment de récupération active.
-            </p>
-            <p>
-              En franchissant la ligne d'arrivée imaginaire de cette sortie longue, la satisfaction était totale. Plus qu'une simple ligne sur Strava, c'était une victoire personnelle, un récit écrit à la sueur et à la détermination.
-            </p>
+            {story.content.split('\n').map((p: string, i: number) => (
+              <p key={i}>{p}</p>
+            ))}
           </div>
           
-          <div className="mt-20 pt-10 border-t border-brand-navy/5 flex items-center justify-between">
+          <div className="mt-20 pt-10 border-t border-brand-navy/5 flex items-center justify-between relative">
             <div className="flex items-center gap-6">
               <button className="flex items-center gap-2 text-brand-navy/40 hover:text-brand-coral transition-colors">
-                <Heart size={24} /> <span>124</span>
+                <Heart size={24} /> <span>{Math.floor(Math.random() * 100)}</span>
               </button>
               <button className="flex items-center gap-2 text-brand-navy/40 hover:text-brand-coral transition-colors">
-                <MessageSquare size={24} /> <span>18</span>
+                <MessageSquare size={24} /> <span>{Math.floor(Math.random() * 20)}</span>
               </button>
             </div>
-            <button className="p-3 bg-brand-navy/5 rounded-full hover:bg-brand-coral hover:text-white transition-all">
-              <Share2 size={24} />
-            </button>
+            
+            <div className="relative">
+              <button 
+                onClick={() => setShowShare(!showShare)}
+                className={`p-3 rounded-full transition-all ${showShare ? 'bg-brand-coral text-white' : 'bg-brand-navy/5 hover:bg-brand-coral hover:text-white'}`}
+              >
+                <Share2 size={24} />
+              </button>
+              
+              <AnimatePresence>
+                {showShare && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    className="absolute bottom-full right-0 mb-4 bg-white shadow-2xl rounded-2xl p-4 flex gap-4 border border-brand-navy/5 z-50"
+                  >
+                    {socialLinks.map((link) => (
+                      <a 
+                        key={link.name}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-3 hover:bg-brand-navy/5 rounded-xl transition-colors text-brand-navy/60 hover:text-brand-coral flex flex-col items-center gap-1"
+                      >
+                        <link.icon size={20} />
+                        <span className="text-[10px] font-bold">{link.name}</span>
+                      </a>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
         
@@ -117,34 +176,15 @@ export const ArticlePage: React.FC<Props> = ({ story, onBack }) => {
               <Zap className="text-brand-coral" size={20} /> Training Insight
             </h4>
             <p className="text-sm text-brand-navy/70 italic leading-relaxed mb-6">
-              "Votre gestion de l'allure sur la seconde moitié du parcours montre une excellente endurance aérobie. Continuez à intégrer ces sorties longues pour solidifier votre base avant votre prochain objectif."
+              "Analyse IA : Votre régularité sur ce parcours de {story.stats?.distance}km est impressionnante."
             </p>
             <div className="h-2 w-full bg-brand-navy/5 rounded-full overflow-hidden">
               <div className="h-full bg-brand-turquoise w-[85%]" />
             </div>
             <p className="text-[10px] font-bold uppercase tracking-widest mt-2 text-brand-turquoise">Endurance Score: 85%</p>
           </div>
-          
-          <div>
-            <h4 className="font-display font-bold mb-6 text-sm uppercase tracking-widest text-brand-navy/40">À propos de l'auteur</h4>
-            <div className="flex items-center gap-4 mb-4">
-              <img src={story.author.avatar} alt={story.author.name} className="w-12 h-12 rounded-full" />
-              <div>
-                <p className="font-bold">{story.author.name}</p>
-                <p className="text-xs text-brand-navy/50">{story.author.stats.totalDistance}km parcourus</p>
-              </div>
-            </div>
-            <p className="text-xs text-brand-navy/60 leading-relaxed">
-              {story.author.bio}
-            </p>
-            <button className="w-full mt-6 py-3 border border-brand-navy/10 rounded-xl text-xs font-bold hover:bg-brand-navy hover:text-white transition-all">
-              Suivre le coureur
-            </button>
-          </div>
         </aside>
       </div>
     </motion.div>
   );
 };
-
-import { Zap } from 'lucide-react';
