@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { motion } from 'motion/react';
-import { LogIn, UserPlus, Mail, Lock, User as UserIcon } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,20 +10,30 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
+    
+    console.log(`Attempting ${isLogin ? 'login' : 'registration'} for:`, email);
+    
     try {
       if (isLogin) {
         await login({ email, password });
       } else {
         await register({ email, password, name });
       }
-      window.location.href = '/';
+      console.log('Auth successful, navigating to home');
+      navigate('/');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Auth error:', err);
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -87,10 +98,15 @@ const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full bg-[#FF5C35] hover:bg-[#FF451A] text-white font-bold py-4 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="w-full bg-[#FF5C35] hover:bg-[#FF451A] text-white font-bold py-4 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-            {isLogin ? 'Sign In' : 'Create Account'}
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />
+            )}
+            {isSubmitting ? 'Processing ... ' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 

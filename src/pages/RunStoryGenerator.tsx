@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Upload, Mic, Image as ImageIcon, MapPin, Sparkles, 
   CheckCircle, ArrowRight, ArrowLeft, Loader2, 
-  PlusCircle, Zap, Share2, Twitter, Facebook, Linkedin, ExternalLink
+  PlusCircle, Zap, Share2, Twitter, Facebook, Linkedin, ExternalLink,
+  X, Trash2, Video, Music
 } from 'lucide-react';
-import { generateRunStory, AIEngine } from '../services/aiService';
+import { generateRunStory, AIEngine, analyzeMedia, getDefaultLLM } from '../services/aiService';
+import { VoiceRecorder } from '../components/VoiceRecorder';
+import { useAuth } from '../components/AuthContext';
+import { ImageAnalysis } from '../types';
 
 export const RunStoryGenerator: React.FC = () => {
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [status, setStatus] = useState<'published' | 'draft'>('published');
+  const [storyType, setStoryType] = useState<'user_story' | 'editorial'>(user?.role === 'admin' ? 'editorial' : 'user_story');
   const [engine, setEngine] = useState<AIEngine>('zai');
   const [publishedStory, setPublishedStory] = useState<any>(null);
   const [runData, setRunData] = useState({
@@ -22,12 +28,25 @@ export const RunStoryGenerator: React.FC = () => {
     time: '57:45'
   });
   const [notes, setNotes] = useState('');
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [media, setMedia] = useState<{ file: File; preview: string; type: 'image' | 'video' | 'audio'; analysis?: any }[]>([]);
+  const [isAnalyzingMedia, setIsAnalyzingMedia] = useState(false);
   const [generatedStory, setGeneratedStory] = useState<any>(null);
+
+  const canSelectLLM = user?.role === 'admin';
+
+  useEffect(() => {
+    const fetchDefaultLLM = async () => {
+      const settings = await getDefaultLLM();
+      setEngine(settings.default_llm.engine as AIEngine);
+    };
+    fetchDefaultLLM();
+  }, []);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const story = await generateRunStory(runData, notes, engine);
+      const story = await generateRunStory(runData, notes, engine, voiceTranscript);
       setGeneratedStory(story);
       setStep(4);
     } catch (error) {
@@ -35,6 +54,35 @@ export const RunStoryGenerator: React.FC = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'audio') => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    const preview = URL.createObjectURL(file);
+    
+    setIsAnalyzingMedia(true);
+    try {
+      const analysis = await analyzeMedia(file);
+      setMedia(prev => [...prev, { file, preview, type, analysis }]);
+      
+      // Automatically enrich notes/transcript with analysis
+      if (analysis.description) {
+        setNotes(prev => prev + `\n[Média ${type}: ${analysis.description}]`);
+      }
+      if (analysis.transcript) {
+        setVoiceTranscript(prev => prev + (prev ? ' ' : '') + analysis.transcript);
+      }
+    } catch (error) {
+      setMedia(prev => [...prev, { file, preview, type }]);
+    } finally {
+      setIsAnalyzingMedia(false);
+    }
+  };
+
+  const removeMedia = (index: number) => {
+    setMedia(prev => prev.filter((_, i) => i !== index));
   };
 
   const handlePublish = async () => {
@@ -49,7 +97,12 @@ export const RunStoryGenerator: React.FC = () => {
           content: generatedStory.content,
           stats: runData,
           status: status,
-          image_url: 'https://picsum.photos/seed/run/1200/800' // Placeholder
+          type: storyType,
+          image_url: 'https://picsum.photos/seed/run/1200/800', // Placeholder
+          emotion: generatedStory.emotion,
+          terrain: generatedStory.terrain,
+          ambiance: generatedStory.ambiance,
+          intensity: generatedStory.intensity
         }),
       });
       const data = await response.json();
@@ -131,40 +184,42 @@ export const RunStoryGenerator: React.FC = () => {
           >
             <h2 className="text-3xl font-display font-black mb-6">Importez votre séance</h2>
             
-            <div className="mb-8 p-6 bg-brand-navy/5 rounded-2xl border border-brand-navy/10">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-brand-navy/40 mb-4">Moteur d'IA</h3>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => setEngine('zai')}
-                  className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 relative ${
-                    engine === 'zai' ? 'border-brand-coral bg-white shadow-md' : 'border-transparent bg-white/50 grayscale opacity-50'
-                  }`}
-                >
-                  {engine === 'zai' && (
-                    <span className="absolute -top-2 -right-2 bg-brand-coral text-white text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter shadow-sm">
-                      Par défaut
-                    </span>
-                  )}
-                  <Zap size={24} className={engine === 'zai' ? 'text-brand-coral' : ''} />
-                  <div className="text-center">
-                    <div className="font-bold text-sm">Z.ai</div>
-                    <div className="text-[10px] opacity-50 uppercase font-black">GLM 4.7</div>
-                  </div>
-                </button>
-                <button 
-                  onClick={() => setEngine('gemini')}
-                  className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    engine === 'gemini' ? 'border-brand-coral bg-white shadow-md' : 'border-transparent bg-white/50 grayscale opacity-50'
-                  }`}
-                >
-                  <Sparkles size={24} className={engine === 'gemini' ? 'text-brand-coral' : ''} />
-                  <div className="text-center">
-                    <div className="font-bold text-sm">Gemini</div>
-                    <div className="text-[10px] opacity-50 uppercase font-black">3.1 Pro</div>
-                  </div>
-                </button>
+            {canSelectLLM && (
+              <div className="mb-8 p-6 bg-brand-navy/5 rounded-2xl border border-brand-navy/10">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-brand-navy/40 mb-4">Moteur d'IA (Admin Only)</h3>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setEngine('zai')}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 relative ${
+                      engine === 'zai' ? 'border-brand-coral bg-white shadow-md' : 'border-transparent bg-white/50 grayscale opacity-50'
+                    }`}
+                  >
+                    {engine === 'zai' && (
+                      <span className="absolute -top-2 -right-2 bg-brand-coral text-white text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-tighter shadow-sm">
+                        Par défaut
+                      </span>
+                    )}
+                    <Zap size={24} className={engine === 'zai' ? 'text-brand-coral' : ''} />
+                    <div className="text-center">
+                      <div className="font-bold text-sm">Z.ai</div>
+                      <div className="text-[10px] opacity-50 uppercase font-black">GLM 4.7</div>
+                    </div>
+                  </button>
+                  <button 
+                    onClick={() => setEngine('gemini')}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      engine === 'gemini' ? 'border-brand-coral bg-white shadow-md' : 'border-transparent bg-white/50 grayscale opacity-50'
+                    }`}
+                  >
+                    <Sparkles size={24} className={engine === 'gemini' ? 'text-brand-coral' : ''} />
+                    <div className="text-center">
+                      <div className="font-bold text-sm">Gemini</div>
+                      <div className="text-[10px] opacity-50 uppercase font-black">3.1 Pro</div>
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="p-8 border-2 border-dashed border-brand-navy/10 rounded-2xl flex flex-col items-center justify-center text-center hover:border-brand-coral/50 transition-colors cursor-pointer group">
@@ -217,17 +272,8 @@ export const RunStoryGenerator: React.FC = () => {
           >
             <h2 className="text-3xl font-display font-black mb-6">Racontez votre expérience</h2>
             <div className="space-y-6 mb-8">
-              <div className="p-6 bg-brand-sky rounded-2xl flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-brand-coral rounded-full flex items-center justify-center text-white">
-                    <Mic size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold">Note vocale</h4>
-                    <p className="text-sm text-brand-navy/50">Parlez naturellement de votre séance.</p>
-                  </div>
-                </div>
-                <button className="px-4 py-2 bg-white rounded-full text-xs font-bold shadow-sm">Enregistrer</button>
+              <div className="p-6 bg-brand-sky rounded-2xl">
+                <VoiceRecorder onTranscript={setVoiceTranscript} />
               </div>
               
               <div>
@@ -260,11 +306,75 @@ export const RunStoryGenerator: React.FC = () => {
             exit={{ opacity: 0, x: -20 }}
             className="bg-white p-8 rounded-3xl border border-brand-navy/5 shadow-xl"
           >
-            <h2 className="text-3xl font-display font-black mb-6">Ajoutez des visuels</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-              <div className="aspect-square border-2 border-dashed border-brand-navy/10 rounded-2xl flex items-center justify-center text-brand-navy/20 hover:border-brand-coral/50 cursor-pointer transition-colors">
-                <PlusCircle size={32} />
-              </div>
+            <h2 className="text-3xl font-display font-black mb-6">Ajoutez vos souvenirs</h2>
+            <p className="text-brand-navy/60 mb-8">Importez des photos, vidéos ou enregistrements audio pour enrichir votre récit. L'IA les analysera automatiquement.</p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {media.map((item, i) => (
+                <div key={i} className="aspect-square rounded-2xl overflow-hidden relative group bg-brand-navy/5">
+                  {item.type === 'image' && <img src={item.preview} alt="Run" className="w-full h-full object-cover" />}
+                  {item.type === 'video' && (
+                    <div className="w-full h-full flex items-center justify-center bg-brand-navy/10">
+                      <Video size={32} className="text-brand-navy/30" />
+                    </div>
+                  )}
+                  {item.type === 'audio' && (
+                    <div className="w-full h-full flex items-center justify-center bg-brand-navy/10">
+                      <Music size={32} className="text-brand-navy/30" />
+                    </div>
+                  )}
+                  
+                  <button 
+                    onClick={() => removeMedia(i)}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  
+                  {item.analysis && (
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 text-[8px] text-white italic line-clamp-2">
+                      {item.analysis.description}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* Upload Buttons */}
+              <label className="aspect-square border-2 border-dashed border-brand-navy/10 rounded-2xl flex flex-col items-center justify-center text-brand-navy/20 hover:border-brand-coral/50 cursor-pointer transition-colors">
+                {isAnalyzingMedia ? (
+                  <Loader2 size={24} className="animate-spin text-brand-coral" />
+                ) : (
+                  <>
+                    <ImageIcon size={24} />
+                    <span className="text-[8px] font-bold uppercase mt-2 text-center">Photo</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleMediaUpload(e, 'image')} disabled={isAnalyzingMedia} />
+              </label>
+
+              <label className="aspect-square border-2 border-dashed border-brand-navy/10 rounded-2xl flex flex-col items-center justify-center text-brand-navy/20 hover:border-brand-coral/50 cursor-pointer transition-colors">
+                {isAnalyzingMedia ? (
+                  <Loader2 size={24} className="animate-spin text-brand-coral" />
+                ) : (
+                  <>
+                    <Video size={24} />
+                    <span className="text-[8px] font-bold uppercase mt-2 text-center">Vidéo</span>
+                  </>
+                )}
+                <input type="file" accept="video/*" className="hidden" onChange={(e) => handleMediaUpload(e, 'video')} disabled={isAnalyzingMedia} />
+              </label>
+
+              <label className="aspect-square border-2 border-dashed border-brand-navy/10 rounded-2xl flex flex-col items-center justify-center text-brand-navy/20 hover:border-brand-coral/50 cursor-pointer transition-colors">
+                {isAnalyzingMedia ? (
+                  <Loader2 size={24} className="animate-spin text-brand-coral" />
+                ) : (
+                  <>
+                    <Music size={24} />
+                    <span className="text-[8px] font-bold uppercase mt-2 text-center">Audio</span>
+                  </>
+                )}
+                <input type="file" accept="audio/*" className="hidden" onChange={(e) => handleMediaUpload(e, 'audio')} disabled={isAnalyzingMedia} />
+              </label>
             </div>
             <div className="flex justify-between items-center">
               <button onClick={() => setStep(2)} className="flex items-center gap-2 text-brand-navy/50 font-bold">
@@ -318,6 +428,22 @@ export const RunStoryGenerator: React.FC = () => {
                     Brouillon
                   </button>
                 </div>
+                {user?.role === 'admin' && (
+                  <div className="flex bg-brand-navy/5 p-1 rounded-full">
+                    <button 
+                      onClick={() => setStoryType('editorial')}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${storyType === 'editorial' ? 'bg-white text-brand-turquoise shadow-sm' : 'text-brand-navy/40'}`}
+                    >
+                      Éditorial
+                    </button>
+                    <button 
+                      onClick={() => setStoryType('user_story')}
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${storyType === 'user_story' ? 'bg-white text-brand-navy shadow-sm' : 'text-brand-navy/40'}`}
+                    >
+                      Utilisateur
+                    </button>
+                  </div>
+                )}
               </div>
               
               <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6 leading-tight italic">

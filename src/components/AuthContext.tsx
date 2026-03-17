@@ -31,8 +31,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
-    const { user } = await authService.login(credentials);
-    setUser(user);
+    console.log('AuthContext: login called for', credentials.email);
+    try {
+      const { user } = await authService.login(credentials);
+      console.log('AuthContext: login successful', user.email);
+      setUser(user);
+    } catch (error) {
+      console.error('AuthContext: login failed', error);
+      throw error;
+    }
   };
 
   const register = async (credentials: RegisterCredentials) => {

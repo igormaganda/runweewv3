@@ -59,3 +59,24 @@ export interface CommunityChallenge {
   daysLeft: number;
   imageUrl: string;
 }
+
+export interface Settings {
+  default_llm: { model: string; engine: string };
+  llm_enabled: { zai: boolean; gemini: boolean };
+}
+
+export interface AdminStats {
+  users: number;
+  stories: number;
+  published: number;
+  drafts: number;
+  llmUsage: { engine: string; count: number }[];
+}
+
+export interface ImageAnalysis {
+  description: string;
+  tags: string[];
+  emotion?: string;
+}
+
+export type AIEngine = 'gemini' | 'zai';
