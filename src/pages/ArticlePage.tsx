@@ -270,7 +270,7 @@ export const ArticlePage: React.FC = () => {
         </main>
 
         {/* Sidebar Right: Stats & Insight */}
-        <aside className="lg:col-span-4 space-y-8">
+        <aside className="lg:col-span-4 space-y-8 self-start">
           <div className="bg-brand-sky p-10 rounded-[2.5rem] sticky top-32 border border-brand-navy/5">
             <div className="flex items-center justify-between mb-8">
               <h4 className="font-display font-black flex items-center gap-2 text-brand-navy">

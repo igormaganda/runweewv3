@@ -19,6 +19,7 @@ export const ExperienceHome: React.FC = () => {
     ambiance: string | null;
     terrain: string | null;
   }>({ emotion: null, ambiance: null, terrain: null });
+  const [storiesLimit, setStoriesLimit] = useState<number>(9);
 
   const HERO_IMAGES = [
     'https://images.unsplash.com/photo-1502126324834-38f8e02d7160?auto=format&fit=crop&q=80&w=1920',
@@ -40,10 +41,11 @@ export const ExperienceHome: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [storiesRes, editorialRes, adsRes] = await Promise.all([
+        const [storiesRes, editorialRes, adsRes, settingsRes] = await Promise.all([
           fetch('/api/stories'),
           fetch('/api/stories?type=editorial'),
-          fetch('/api/ads')
+          fetch('/api/ads'),
+          fetch('/api/settings/home_stories_limit')
         ]);
 
         if (storiesRes.ok) {
@@ -59,6 +61,13 @@ export const ExperienceHome: React.FC = () => {
           }));
           setStories(enrichedData);
           setFilteredStories(enrichedData);
+        }
+
+        if (settingsRes.ok) {
+          const setting = await settingsRes.json();
+          if (setting && setting.value) {
+            setStoriesLimit(setting.value.value || 9);
+          }
         }
 
         if (editorialRes.ok) {
@@ -215,59 +224,85 @@ export const ExperienceHome: React.FC = () => {
         </div>
       </section>
 
-      {/* Editorial Section */}
+      {/* Editorial Section - Magazine */}
       {editorialStories.length > 0 && (
-        <section className="py-12 px-6 bg-white overflow-hidden">
+        <section className="py-16 px-6 bg-gradient-to-b from-brand-navy/5 to-white">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-10">
               <div>
-                <h2 className="text-4xl font-display font-black tracking-tighter">Le <span className="text-brand-coral italic">Magazine</span></h2>
+                <h2 className="text-4xl md:text-5xl font-display font-black tracking-tighter">Le <span className="text-brand-coral italic">Magazine</span></h2>
                 <p className="text-brand-navy/40 font-bold uppercase tracking-widest text-xs mt-2">Articles exclusifs par notre rédaction</p>
               </div>
-              <Link to="/" className="text-brand-navy font-bold flex items-center gap-2 group">
+              <Link to="/magazine" className="text-brand-navy font-bold flex items-center gap-2 group hover:text-brand-coral transition-colors">
                 Tout lire <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {editorialStories.slice(0, 2).map((story, i) => (
-                <motion.div 
+                <motion.article 
                   key={story.id}
-                  initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
                   onClick={() => navigate(`/article/${story.slug}`)}
-                  className="group cursor-pointer"
+                  className="group cursor-pointer bg-white rounded-[2rem] overflow-hidden border border-brand-navy/10 hover:border-brand-coral/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
                 >
-                  <div className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden mb-6">
-                    <img src={story.imageUrl} alt={story.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                    <div className="absolute top-6 left-6">
-                      <span className="px-4 py-2 bg-brand-coral text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                  {/* Image Section - Top half */}
+                  <div className="relative aspect-[16/10] overflow-hidden bg-brand-navy/5">
+                    <img 
+                      src={story.imageUrl || story.image_url} 
+                      alt={story.title} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    
+                    {/* Category Badge */}
+                    <div className="absolute top-5 left-5">
+                      <span className="px-4 py-2 bg-white/95 backdrop-blur-sm text-brand-navy text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
                         Éditorial
                       </span>
                     </div>
                   </div>
-                  <h3 className="text-3xl font-display font-black mb-4 group-hover:text-brand-coral transition-colors leading-tight">
-                    {story.title}
-                  </h3>
-                  <p className="text-brand-navy/60 line-clamp-2 mb-6 font-medium">
-                    {story.content.substring(0, 180)}...
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <img src={story.author.avatar} alt="" className="w-10 h-10 rounded-full border-2 border-brand-navy/5" />
-                    <div>
-                      <div className="text-sm font-black text-brand-navy">{story.author.name}</div>
-                      <div className="text-[10px] font-bold text-brand-navy/40 uppercase tracking-wider">Rédaction RunWeek</div>
+
+                  {/* Content Section - Bottom half */}
+                  <div className="p-8">
+                    {/* Title */}
+                    <h3 className="text-2xl md:text-3xl font-display font-black mb-4 group-hover:text-brand-coral transition-colors leading-tight text-brand-navy">
+                      {story.title}
+                    </h3>
+
+                    {/* Excerpt */}
+                    <p className="text-brand-navy/60 line-clamp-3 mb-6 font-medium leading-relaxed">
+                      {story.content?.substring(0, 160) || story.excerpt?.substring(0, 160) || ''}...
+                    </p>
+
+                    {/* Author & Meta */}
+                    <div className="flex items-center justify-between pt-6 border-t border-brand-navy/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-coral to-brand-turquoise flex items-center justify-center text-white font-black text-sm shadow-md">
+                          {(story.author_name || "Anonymous")[0]}
+                        </div>
+                        <div>
+                          <div className="text-sm font-black text-brand-navy">{story.author_name || "Anonymous"}</div>
+                          <div className="text-[10px] font-bold text-brand-navy/40 uppercase tracking-wider">Rédaction</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-brand-navy/30 group-hover:text-brand-coral/70 transition-colors">
+                        <span className="text-xs font-bold uppercase tracking-wider">Lire</span>
+                        <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
-                </motion.div>
+                </motion.article>
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* Ad Zone: Home Middle */}
+{/* Ad Zone: Home Middle */}
       {ads.filter(ad => ad.position === 'home_middle').map(ad => (
         <div key={ad.id} className="max-w-7xl mx-auto px-6 py-8">
           <a href={ad.link_url} target="_blank" rel="noopener noreferrer" className="block relative group overflow-hidden rounded-2xl">
@@ -309,7 +344,7 @@ export const ExperienceHome: React.FC = () => {
             </div>
           ) : filteredStories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredStories.map((story) => (
+              {filteredStories.slice(0, storiesLimit).map((story) => (
                 <ImmersiveStoryCard 
                   key={story.id} 
                   story={story} 

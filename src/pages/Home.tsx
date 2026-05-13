@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MOCK_STORIES, MOCK_CHALLENGES, HERO_BACKGROUNDS } from '../constants';
 import { RunStoryCard } from '../components/RunStoryCard';
+import { EditorialCard } from '../components/EditorialCard';
 import { ArrowRight, Zap, Trophy, Users, Map, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RunStory } from '../types';
 
 export const Home: React.FC = () => {
   const [stories, setStories] = useState<RunStory[]>([]);
+  const [editorials, setEditorials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [heroBg, setHeroBg] = useState(HERO_BACKGROUNDS[0]);
 
@@ -21,7 +23,11 @@ export const Home: React.FC = () => {
         const response = await fetch('/api/stories');
         const data = await response.json();
         if (data.length > 0) {
-          const mappedStories = data.map((s: any) => ({
+          // Separate editorials and regular stories
+          const editorialStories = data.filter((s: any) => s.type === "editorial");
+          const regularStories = data.filter((s: any) => s.type !== "editorial");
+          
+          const mappedStories = regularStories.map((s: any) => ({
             ...s,
             id: s.id.toString(),
             excerpt: s.content.substring(0, 150) + '...',
@@ -37,8 +43,11 @@ export const Home: React.FC = () => {
             runData: s.stats || { distance: 0, pace: '0:00', elevation: 0, time: '0:00' }
           }));
           setStories(mappedStories);
+          setEditorials(editorialStories);
+          console.log("Editorials fetched:", editorialStories.length, editorialStories.map(e => e.title));
         } else {
           setStories(MOCK_STORIES);
+          setEditorials([]);
         }
       } catch (err) {
         console.error('Failed to fetch stories:', err);
@@ -50,8 +59,13 @@ export const Home: React.FC = () => {
     fetchStories();
   }, []);
 
-  const featuredStory = stories.find(s => s.isFeatured) || stories[0] || MOCK_STORIES[0];
+  const featuredStory = stories[0] || MOCK_STORIES[0];
   const latestStories = stories.slice(0, 3);
+  // Filter editorials: ID >= 36 or type === "editorial"
+  const featuredEditorials = editorials.slice(0, 2);
+  console.log("Total stories:", stories.length);
+  console.log("Editorials found:", featuredEditorials.length, featuredEditorials.map(e => ({id: e.id, title: e.title})));
+  console.log('featuredEditorials:', featuredEditorials.length, featuredEditorials);
 
   if (loading) {
     return (
@@ -107,6 +121,30 @@ export const Home: React.FC = () => {
           </Link>
         </div>
       </section>
+
+      {/* Editorial Section */}
+      {true && (
+        <section className="py-16 px-6 max-w-7xl mx-auto w-full bg-gradient-to-b from-brand-turquoise/5 to-transparent">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <span className="section-label !text-brand-turquoise">A La Une</span>
+              <h2 className="text-3xl font-display font-black">Articles editoriaux</h2>
+            </div>
+            <Link to="/magazine" className="hidden sm:flex items-center gap-2 text-brand-coral font-bold hover:gap-3 transition-all">
+              Voir tout <ArrowRight size={20} />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {featuredEditorials.map(editorial => (
+              <Link key={editorial.id} to={`/article/${editorial.slug || editorial.id}`} className="cursor-pointer">
+                <EditorialCard story={editorial} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       {/* Latest Stories */}
       <section className="py-24 px-6 max-w-7xl mx-auto w-full">

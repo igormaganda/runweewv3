@@ -1,4 +1,5 @@
 import express from 'express';
+import { garminService } from "./src/services/garminService.ts";
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -441,7 +442,7 @@ async function startServer() {
   initDb().catch(err => console.error('Background DB init error:', err));
   
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3003;
 
   app.use(express.json());
   app.use(cookieParser());
@@ -490,7 +491,7 @@ async function startServer() {
       const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(info.lastInsertRowid) as any;
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
       
-      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 7 * 24 * 60 * 60 * 1000 });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'lax', domain: '.runweek.fr', maxAge: 7 * 24 * 60 * 60 * 1000 });
       res.json({ user });
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -525,7 +526,7 @@ async function startServer() {
       console.log('Login successful, generating token...');
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
       
-      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 7 * 24 * 60 * 60 * 1000 });
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'lax', domain: '.runweek.fr', maxAge: 7 * 24 * 60 * 60 * 1000 });
       res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
     } catch (err: any) {
       console.error('Login error details:', err);
@@ -556,6 +557,47 @@ async function startServer() {
   });
 
   // --- Stories Routes ---
+
+  // --- Garmin OAuth Routes ---
+  app.get('/api/auth/garmin', (req, res) => {
+    const state = Math.random().toString(36).substring(7);
+    const authUrl = garminService.getAuthUrl(state, 'https://v3.runweek.fr/garmin/callback');
+    res.redirect(authUrl);
+  });
+
+  app.get('/api/garmin/callback', async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      if (!code) {
+        return res.status(400).json({ error: 'No code provided' });
+      }
+
+      const tokens = await garminService.exchangeToken(code as string, 'https://v3.runweek.fr/garmin/callback');
+      
+      // TODO: Save to database when user is authenticated
+      // For now, redirect to settings with connected flag
+      res.redirect('/settings?connected=garmin');
+    } catch (err: any) {
+      console.error('Garmin callback error:', err);
+      res.status(500).json({ error: 'Garmin authentication failed' });
+    }
+  });
+
+  app.post('/api/garmin/sync', async (req, res) => {
+    try {
+      const token = req.cookies.token;
+      if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      
+      // TODO: Get connection from database and sync activities
+      res.json({ synced: 0, message: 'Garmin sync to be implemented with database' });
+    } catch (err: any) {
+      console.error('Garmin sync error:', err);
+      res.status(500).json({ error: 'Sync failed' });
+    }
+  });
+
   app.get('/api/stories', async (req, res) => {
     try {
       const type = req.query.type as string;
@@ -570,11 +612,11 @@ async function startServer() {
       if (type) {
         query += ' AND s.type = ?';
         params.push(type);
-      }
+            }
 
       query += ' ORDER BY s.created_at DESC';
 
-      const stories = db.prepare(query).all(...params) as any[];
+      const stories = db.prepare(query).all(...params);
       
       // Parse stats JSON
       const parsedStories = stories.map(s => ({
@@ -595,7 +637,7 @@ async function startServer() {
   // Ads API
   app.get('/api/ads', (req, res) => {
     const position = req.query.position as string;
-    let query = 'SELECT * FROM ads WHERE status = "active"';
+    let query = "SELECT * FROM ads WHERE status = 'active'";
     const params: any[] = [];
 
     if (position) {
@@ -619,6 +661,20 @@ async function startServer() {
   app.delete('/api/admin/ads/:id', authenticateToken, isAdmin, (req, res) => {
     db.prepare('DELETE FROM ads WHERE id = ?').run(req.params.id);
     res.sendStatus(200);
+
+  });
+  // Settings API
+  app.get('/api/settings/:key', (req, res) => {
+    const { key } = req.params;
+    const setting = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+    res.json(setting ? { value: setting.value } : { value: null });
+  });
+
+  app.post('/api/settings/:key', authenticateToken, isAdmin, (req, res) => {
+    const { key } = req.params;
+    const { value } = req.body;
+    db.prepare('INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)').run(key, value);
+    res.json({ success: true });
   });
 
   app.get('/api/stories/:slug', async (req, res) => {

@@ -15,6 +15,7 @@ import { AdminStories } from './pages/AdminStories';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminAds } from './pages/AdminAds';
 import { AdminEditorial } from './pages/AdminEditorial';
+import { ProfileSettings } from './pages/ProfileSettings';
 import { MagazinePage } from './pages/MagazinePage';
 import { TrailPage } from './pages/TrailPage';
 import { TrainingPage } from './pages/TrainingPage';
@@ -204,6 +205,7 @@ function AppContent() {
           <Route path="/article/:slug" element={<ArticlePage onBack={() => navigate('/')} />} />
           <Route path="/profile" element={<RunnerProfile />} />
           <Route path="/profile/:id" element={<RunnerProfile />} />
+          <Route path="/settings" element={user ? <ProfileSettings /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>

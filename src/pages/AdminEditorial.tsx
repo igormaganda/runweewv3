@@ -125,8 +125,8 @@ export const AdminEditorial: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <img src={s.author.avatar} alt="" className="w-6 h-6 rounded-full" />
-                        <span className="text-sm text-brand-navy/70">{s.author.name}</span>
+                        <img src={"https://i.pravatar.cc/150?u=" + s.author_id} alt="" className="w-6 h-6 rounded-full" />
+                        <span className="text-sm text-brand-navy/70">{s.author_name || "Anonymous"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-brand-navy/60">

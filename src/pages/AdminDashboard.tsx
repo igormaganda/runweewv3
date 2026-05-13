@@ -20,23 +20,29 @@ export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pendingStories, setPendingStories] = useState<any[]>([]);
+  const [homeStoriesLimit, setHomeStoriesLimit] = useState<number>(9);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [usersRes, statsRes, settingsRes, pendingRes] = await Promise.all([
+      const [usersRes, statsRes, settingsRes, pendingRes, homeLimitRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/stats'),
         fetch('/api/admin/settings'),
-        fetch('/api/admin/stories/pending')
+        fetch('/api/admin/stories/pending'),
+        fetch('/api/settings/home_stories_limit')
       ]);
 
       if (usersRes.ok) setUsers(await usersRes.json());
       if (statsRes.ok) setStats(await statsRes.json());
       if (settingsRes.ok) setSettings(await settingsRes.json());
       if (pendingRes.ok) setPendingStories(await pendingRes.json());
+      if (homeLimitRes.ok) {
+        const limitData = await homeLimitRes.json();
+        setHomeStoriesLimit(limitData.value?.value || 9);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -245,6 +251,42 @@ export const AdminDashboard: React.FC = () => {
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.llm_enabled.gemini ? 'left-5' : 'left-1'}`} />
                       </button>
                     </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-brand-navy/40 mb-3 block">Récits Immersifs (Home)</label>
+                  <div className="p-4 bg-brand-navy/5 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Nombre de récits affichés</span>
+                      <span className="text-2xl font-black text-brand-coral">{homeStoriesLimit}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="3"
+                      max="30"
+                      value={homeStoriesLimit}
+                      onChange={(e) => setHomeStoriesLimit(parseInt(e.target.value))}
+                      className="w-full h-2 bg-brand-navy/10 rounded-full appearance-none cursor-pointer accent-brand-coral"
+                    />
+                    <div className="flex items-center justify-between text-xs text-brand-navy/40 font-medium">
+                      <span>3</span>
+                      <span>30</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        fetch('/api/settings/home_stories_limit', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ value: { value: homeStoriesLimit, min: 3, max: 30 } })
+                        }).then(res => {
+                          if (res.ok) alert('Limite de récits mise à jour !');
+                          else alert('Erreur lors de la mise à jour');
+                        });
+                      }}
+                      className="w-full py-2 bg-brand-coral text-white text-sm font-bold rounded-xl hover:bg-brand-coral/90 transition-colors"
+                    >
+                      Appliquer
+                    </button>
                   </div>
                 </div>
               </>
