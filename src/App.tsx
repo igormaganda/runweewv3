@@ -1,4 +1,5 @@
 import React from 'react';
+import { CookieBanner } from './components/CookieBanner';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -7,6 +8,9 @@ import { Home } from './pages/Home';
 import { ExperienceHome } from './pages/ExperienceHome';
 import { RunStoryGenerator } from './pages/RunStoryGenerator';
 import { ArticlePage } from './pages/ArticlePage';
+import { MentionsLegalesPage } from './pages/MentionsLegalesPage';
+import { PolitiqueConfidentialitePage } from './pages/PolitiqueConfidentialitePage';
+import { PolitiqueCookiesPage } from './pages/PolitiqueCookiesPage';
 import { RunnerProfile } from './pages/RunnerProfile';
 import LoginPage from './pages/LoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -203,11 +207,15 @@ function AppContent() {
           <Route path="/admin/ads" element={user?.role === 'admin' ? <AdminAds /> : <Navigate to="/" />} />
           <Route path="/admin/users" element={user?.role === 'admin' ? <AdminUsers /> : <Navigate to="/" />} />
           <Route path="/article/:slug" element={<ArticlePage onBack={() => navigate('/')} />} />
+          <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+          <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialitePage />} />
+          <Route path="/politique-cookies" element={<PolitiqueCookiesPage} />} />
           <Route path="/profile" element={<RunnerProfile />} />
           <Route path="/profile/:id" element={<RunnerProfile />} />
           <Route path="/settings" element={user ? <ProfileSettings /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <CookieBanner />
       </main>
       <Footer />
     </div>
