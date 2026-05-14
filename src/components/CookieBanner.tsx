@@ -3,6 +3,7 @@ import { X, Cookie } from 'lucide-react';
 
 export const CookieBanner: React.FC = () => {
   const [visible, setVisible] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const consent = localStorage.getItem('cookie-consent');
@@ -43,11 +44,17 @@ export const CookieBanner: React.FC = () => {
               🍪 Nous utilisons des cookies
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Pour améliorer votre expérience et mesurer l&apos;audience.
+              Pour améliorer votre expérience, mesurer l&apos;audience et gérer vos préférences RGPD.
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            Gérer
+          </button>
           <button
             onClick={acceptEssential}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -68,6 +75,11 @@ export const CookieBanner: React.FC = () => {
           </button>
         </div>
       </div>
+      {showSettings && (
+        <div className="max-w-4xl mx-auto mt-3 text-xs text-gray-600 dark:text-gray-400">
+          Cookies nécessaires : toujours actifs. Cookies analytiques et marketing : activés uniquement si vous cliquez sur « Tout accepter ».
+        </div>
+      )}
     </div>
   );
 };

@@ -79,7 +79,7 @@ function AppContent() {
               <>
                 <Link to="/generator" className="flex items-center gap-2 btn-primary !py-2 !px-4 text-sm">
                   <PlusCircle size={18} />
-                  <span>Publish Run</span>
+                  <span>Publier une sortie</span>
                 </Link>
                 <Link 
                   to={`/profile/${user.id}`}
@@ -94,7 +94,7 @@ function AppContent() {
                     navigate('/login');
                   }}
                   className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-colors"
-                  title="Logout"
+                  title="Déconnexion"
                 >
                   <LogOut size={20} />
                 </button>
@@ -105,7 +105,7 @@ function AppContent() {
                 className="flex items-center gap-2 btn-primary !py-2 !px-4 text-sm"
               >
                 <LogIn size={18} />
-                <span>Sign In</span>
+                <span>Connexion</span>
               </Link>
             )}
           </div>
@@ -155,7 +155,7 @@ function AppContent() {
                     className="btn-primary flex items-center justify-center gap-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <PlusCircle size={20} /> Publish Run
+                    <PlusCircle size={20} /> Publier une sortie
                   </Link>
                   <Link 
                     to={`/profile/${user.id}`}
@@ -172,7 +172,7 @@ function AppContent() {
                     }}
                     className="flex items-center gap-2 font-bold text-red-500"
                   >
-                    <LogOut size={20} /> Logout
+                    <LogOut size={20} /> Déconnexion
                   </button>
                 </>
               ) : (
@@ -181,7 +181,7 @@ function AppContent() {
                   className="btn-primary flex items-center justify-center gap-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <LogIn size={20} /> Sign In
+                  <LogIn size={20} /> Connexion
                 </Link>
               )}
             </motion.div>
@@ -209,7 +209,7 @@ function AppContent() {
           <Route path="/article/:slug" element={<ArticlePage onBack={() => navigate('/')} />} />
           <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
           <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialitePage />} />
-          <Route path="/politique-cookies" element={<PolitiqueCookiesPage} />} />
+          <Route path="/politique-cookies" element={<PolitiqueCookiesPage />} />
           <Route path="/profile" element={<RunnerProfile />} />
           <Route path="/profile/:id" element={<RunnerProfile />} />
           <Route path="/settings" element={user ? <ProfileSettings /> : <Navigate to="/login" />} />

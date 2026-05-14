@@ -84,7 +84,7 @@ const LoginPage: React.FC = () => {
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="password"
-              placeholder="Password"
+              placeholder="Mot de passe"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-[#FF5C35] transition-colors"
@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
             ) : (
               isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />
             )}
-            {isSubmitting ? 'Processing ... ' : (isLogin ? 'Sign In' : 'Create Account')}
+            {isSubmitting ? 'Traitement... ' : (isLogin ? 'Connexion' : 'Créer un compte')}
           </button>
         </form>
 
@@ -115,7 +115,7 @@ const LoginPage: React.FC = () => {
             onClick={() => setIsLogin(!isLogin)}
             className="text-white/60 hover:text-white transition-colors text-sm"
           >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            {isLogin ? "Vous n'avez pas de compte ? Inscrivez-vous" : "Vous avez déjà un compte ? Connectez-vous"}
           </button>
         </div>
       </motion.div>
