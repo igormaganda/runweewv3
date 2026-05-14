@@ -8,3 +8,4 @@ dist_backup*/
 *.py
 database.sqlite
 .env
+server.log
