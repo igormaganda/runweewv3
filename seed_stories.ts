@@ -39,28 +39,22 @@ async function seed() {
       userIds.push(res.rows[0].id);
     }
 
-    const stories = [
+    const baseStories = [
       { title: "L'Odyssée du Silence", emotion: "introspection", terrain: "desert", ambiance: "night", intensity: 4, content: "Une traversée nocturne où seul le bruit du sable sous les pieds rompt le silence absolu." },
       { title: "Explosion de Performance", emotion: "performance", terrain: "city", ambiance: "sun", intensity: 9, content: "Le bitume brûlant, le chrono qui défile, et cette sensation de puissance pure à chaque foulée." },
       { title: "La Danse des Éléments", emotion: "flow", terrain: "sea", ambiance: "wind", intensity: 7, content: "Courir sur la digue alors que la tempête se prépare, se sentir un avec le vent et les vagues." },
       { title: "Sommet de Transcendance", emotion: "transcendence", terrain: "mountain", ambiance: "dawn", intensity: 10, content: "Atteindre le pic au moment précis où le soleil embrase l'horizon. Un moment hors du temps." },
-      { title: "Le Mur de la Douleur", emotion: "pain", terrain: "canyon", ambiance: "heat", intensity: 10, content: "35 degrés, pas d'ombre, et encore 20km. La lutte est mentale avant d'être physique." },
-      { title: "Grâce Matinale", emotion: "grace", terrain: "lake", ambiance: "dawn", intensity: 5, content: "La brume sur l'eau, le calme plat, et une foulée qui semble ne jamais toucher le sol." },
-      { title: "Résilience Urbaine", emotion: "resilience", terrain: "city", ambiance: "rain", intensity: 8, content: "Sous une pluie battante, slalomer entre les flaques et les voitures, rien ne peut m'arrêter." },
-      { title: "L'Accomplissement Vert", emotion: "accomplishment", terrain: "forest", ambiance: "sun", intensity: 7, content: "Terminer ce trail technique en forêt, épuisé mais comblé par la beauté des sous-bois." },
-      { title: "Flow Nocturne", emotion: "flow", terrain: "city", ambiance: "night", intensity: 6, content: "Les néons se reflètent sur le sol mouillé, la ville m'appartient, le rythme est parfait." },
-      { title: "Introspection Alpine", emotion: "introspection", terrain: "mountain", ambiance: "mist", intensity: 5, content: "Perdu dans les nuages, chaque pas est une question, chaque souffle une réponse." },
-      { title: "Vitesse et Lumière", emotion: "performance", terrain: "lake", ambiance: "sun", intensity: 9, content: "Le tour du lac à fond, le reflet du soleil m'aveugle mais je ne ralentis pas." },
-      { title: "Douleur et Gloire", emotion: "pain", terrain: "desert", ambiance: "heat", intensity: 9, content: "Le sable s'infiltre partout, la soif est là, mais la ligne d'arrivée approche." },
-      { title: "Transcendance Forestière", emotion: "transcendence", terrain: "forest", ambiance: "dawn", intensity: 8, content: "Les premiers rayons percent la canopée, je me sens investi d'une énergie nouvelle." },
-      { title: "Grâce Océanique", emotion: "grace", terrain: "sea", ambiance: "sun", intensity: 6, content: "Courir sur le sable dur à marée basse, la sensation de liberté est totale." },
-      { title: "Résilience des Cimes", emotion: "resilience", terrain: "mountain", ambiance: "snow", intensity: 9, content: "Dans la poudreuse jusqu'aux genoux, chaque mètre est un combat gagné." },
-      { title: "L'Appel du Canyon", emotion: "flow", terrain: "canyon", ambiance: "mist", intensity: 7, content: "Suivre le lit de la rivière asséchée, le relief dicte ma danse." },
-      { title: "Accomplissement Stellaire", emotion: "accomplishment", terrain: "desert", ambiance: "night", intensity: 8, content: "Finir l'ultra-trail sous la Voie Lactée, un sentiment d'immensité." },
-      { title: "Introspection de Pluie", emotion: "introspection", terrain: "countryside", ambiance: "rain", intensity: 4, content: "La campagne sous l'orage, l'odeur de l'ozone, et mes pensées qui s'alignent." },
-      { title: "Performance de l'Aube", emotion: "performance", terrain: "city", ambiance: "dawn", author_id: 1, intensity: 8, content: "Le silence de la ville endormie, seul le bruit de mes chaussures sur le pavé." },
-      { title: "Grâce de Brume", emotion: "grace", terrain: "lake", ambiance: "mist", intensity: 5, content: "Courir sur le ponton, entouré de blanc, l'impression de courir sur les nuages." }
+      { title: "Le Mur de la Douleur", emotion: "pain", terrain: "canyon", ambiance: "heat", intensity: 10, content: "35 degrés, pas d'ombre, et encore 20km. La lutte est mentale avant d'être physique." }
     ];
+
+    const stories = Array.from({ length: 60 }, (_, i) => {
+      const base = baseStories[i % baseStories.length];
+      return {
+        ...base,
+        title: `${base.title} #${i + 1}`,
+        intensity: Math.max(3, Math.min(10, base.intensity + ((i % 5) - 2))),
+      };
+    });
 
     for (const s of stories) {
       const authorId = userIds[Math.floor(Math.random() * userIds.length)];

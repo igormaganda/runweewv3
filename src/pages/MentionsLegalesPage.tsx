@@ -34,7 +34,7 @@ export const MentionsLegalesPage: React.FC = () => {
             <p><span className="font-medium">N° TVA intracommunautaire :</span> FR20 103168944</p>
             <p><span className="font-medium">Code NAF/APE :</span> 6312Z – Portails internet</p>
             <p><span className="font-medium">Siège social :</span> 173 Rue de Courcelles, 75017 Paris, France</p>
-            <p><span className="font-medium">Directeur de la publication :</span> Monsieur Quentin Fourez</p>
+            <p><span className="font-medium">Directeur de la publication :</span> André Beyong</p>
             <p><span className="font-medium">Contact :</span> 
               <a href="mailto:contact@runweek.fr" className="text-blue-600 hover:underline">contact@runweek.fr</a>
             </p>

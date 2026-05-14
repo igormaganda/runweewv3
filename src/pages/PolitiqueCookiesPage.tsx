@@ -47,6 +47,18 @@ export const PolitiqueCookiesPage: React.FC = () => {
             Publicités et contenus personnalisés. Consentement requis.
           </p>
 
+
+
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Settings className="h-5 w-5 text-orange-600" />
+            Gestion de vos préférences
+          </h2>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            Vous pouvez accepter tous les cookies, refuser les cookies optionnels, ou modifier vos choix à tout moment depuis le bandeau RGPD.
+          </p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            Directeur de la publication : André Beyong.
+          </p>
           <p className="text-sm text-gray-700 dark:text-gray-300 mt-6">
             Gérez vos préférences via la bannière cookies ou les paramètres de votre navigateur.
           </p>
